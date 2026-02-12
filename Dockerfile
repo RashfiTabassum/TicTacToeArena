@@ -1,29 +1,21 @@
-﻿# -------- Build Stage --------
+# Build stage
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copy csproj files first (API + Shared)
+# Copy csproj files first (for better caching)
 COPY TicTacToeArena.Api/*.csproj TicTacToeArena.Api/
 COPY TicTacToeArena.Shared/*.csproj TicTacToeArena.Shared/
 
-# Restore
-WORKDIR /src/TicTacToeArena.Api
-RUN dotnet restore
+RUN dotnet restore TicTacToeArena.Api/TicTacToeArena.Api.csproj
 
 # Copy everything
-COPY TicTacToeArena.Api/. ./
-COPY TicTacToeArena.Shared/. ../TicTacToeArena.Shared/
+COPY . .
 
-# Publish
+WORKDIR /src/TicTacToeArena.Api
 RUN dotnet publish -c Release -o /app/publish
 
-# -------- Runtime Stage --------
+# Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 COPY --from=build /app/publish .
-
-# Render uses PORT environment variable
-ENV ASPNETCORE_URLS=http://+:10000
-EXPOSE 10000
-
 ENTRYPOINT ["dotnet", "TicTacToeArena.Api.dll"]
