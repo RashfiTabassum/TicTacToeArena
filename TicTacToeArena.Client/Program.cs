@@ -13,7 +13,13 @@ builder.Services.AddScoped(sp => new HttpClient
     BaseAddress = new Uri(builder.Configuration["ApiUrl"]!)
 });
 
-// Register our GameService
-builder.Services.AddScoped<GameService>();
+
+// Register GameService correctly
+builder.Services.AddScoped<GameService>(sp =>
+{
+    // Pass IConfiguration to GameService constructor
+    var config = sp.GetRequiredService<IConfiguration>();
+    return new GameService(config);
+});
 
 await builder.Build().RunAsync();

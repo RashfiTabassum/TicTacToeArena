@@ -10,7 +10,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("CorsPolicy", policy =>
     {
-        policy.WithOrigins("https://localhost:7174", "http://localhost:5000") // Add your client URLs
+        policy.WithOrigins("https://localhost:7174", "http://localhost:5000", "https://your-client-app.onrender.com") // Add your client URLs
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials(); // Important for SignalR
@@ -31,7 +31,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
+
+var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
+app.Urls.Add($"http://0.0.0.0:{port}");
+
 app.UseCors("CorsPolicy");
 app.UseAuthorization();
 
