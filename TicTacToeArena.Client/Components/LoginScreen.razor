@@ -1,0 +1,315 @@
+﻿<div class="login-container">
+    <div class="logo-section">
+        <h1>TicTacToe Arena</h1>
+        <p>Real-time multiplayer battles</p>
+    </div>
+
+    <div class="login-box">
+        <h2>Enter Your Name</h2>
+        <input @bind="playerName"
+               @bind:event="oninput"
+               placeholder="Your name..."
+               maxlength="20"
+               @onkeypress="HandleKeyPress" />
+        <button @onclick="Login" disabled="@(!CanLogin)">
+            PLAY NOW
+        </button>
+    </div>
+
+    <!-- Floating X and O symbols -->
+    <div class="floating-symbols">
+        <span class="symbol x">✕</span>
+        <span class="symbol o">◯</span>
+        <span class="symbol x">✕</span>
+        <span class="symbol o">◯</span>
+        <span class="symbol x">✕</span>
+    </div>
+</div>
+
+<style>
+    /* Body & Background */
+    body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto';
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: linear-gradient(135deg, #1e1b4b, #312e81, #4c1d95);
+        position: relative;
+        color: white;
+        overflow: hidden;
+    }
+
+        /* Moving TicTacToe grid overlay */
+        body::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image: linear-gradient(rgba(255,255,255,0.05) 2px, transparent 2px), linear-gradient(90deg, rgba(255,255,255,0.05) 2px, transparent 2px);
+            background-size: 120px 120px;
+            z-index: 0;
+            animation: moveGrid 20s linear infinite;
+        }
+
+    /* Floating X and O symbols */
+    .floating-symbols {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        overflow: hidden;
+    }
+
+        .floating-symbols .symbol {
+            position: absolute;
+            font-size: 3rem;
+            font-weight: 900;
+            opacity: 0.15;
+            animation: floatSymbol linear infinite;
+        }
+
+            .floating-symbols .symbol.x {
+                color: #3b82f6;
+            }
+
+            .floating-symbols .symbol.o {
+                color: #ec4899;
+            }
+
+            .floating-symbols .symbol:nth-child(1) {
+                top: 10%;
+                left: 5%;
+                animation-duration: 15s;
+            }
+
+            .floating-symbols .symbol:nth-child(2) {
+                top: 20%;
+                left: 70%;
+                animation-duration: 18s;
+            }
+
+            .floating-symbols .symbol:nth-child(3) {
+                top: 60%;
+                left: 20%;
+                animation-duration: 12s;
+            }
+
+            .floating-symbols .symbol:nth-child(4) {
+                top: 80%;
+                left: 50%;
+                animation-duration: 20s;
+            }
+
+            .floating-symbols .symbol:nth-child(5) {
+                top: 40%;
+                left: 80%;
+                animation-duration: 22s;
+            }
+
+    @@keyframes floatSymbol {
+        0%
+
+    {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0.15;
+    }
+
+    50% {
+        transform: translateY(-50px) rotate(15deg);
+        opacity: 0.25;
+    }
+
+    100% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0.15;
+    }
+
+    }
+
+    /* Container */
+    .login-container {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2rem;
+        min-height: 100vh;
+        animation: fadeIn 1s ease-in-out;
+    }
+
+    /* Logo Section */
+    .logo-section {
+        text-align: center;
+        animation: logoBounce 1s ease-in-out;
+    }
+
+        .logo-section h1 {
+            font-size: 3rem;
+            margin: 0;
+            background: linear-gradient(90deg, #22d3ee, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+        }
+
+        .logo-section p {
+            margin-top: 0.5rem;
+            color: #cbd5e1;
+            font-weight: 500;
+        }
+
+    /* Login Box */
+    .login-box {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        padding: 2rem;
+        border-radius: 16px;
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+        width: 100%;
+        max-width: 400px;
+        border: 2px solid rgba(255,255,255,0.1);
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        animation: bounceIn 0.8s ease-out;
+    }
+
+        .login-box h2 {
+            margin-top: 0;
+            text-align: center;
+            color: #e0e7ff;
+        }
+
+        .login-box input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            font-size: 1.1rem;
+            background: rgba(255,255,255,0.05);
+            color: white;
+        }
+
+            .login-box input::placeholder {
+                color: rgba(255,255,255,0.5);
+            }
+
+            .login-box input:focus {
+                outline: none;
+                border-color: #22d3ee;
+                box-shadow: 0 0 8px #22d3ee;
+            }
+
+        .login-box button {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: #6366f1;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+            .login-box button:hover:not(:disabled) {
+                background-color: #22d3ee;
+                color: #000; /* reverse colors on hover */
+                box-shadow: 0 0 10px #22d3ee;
+                transform: translateY(-2px);
+            }
+
+            .login-box button:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+
+    /* Animations */
+    @@keyframes fadeIn {
+        from
+
+    {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    }
+
+    @@keyframes logoBounce {
+        0%, 20%, 50%, 80%, 100%
+
+    {
+        transform: translateY(0);
+    }
+
+    40% {
+        transform: translateY(-15px);
+    }
+
+    60% {
+        transform: translateY(-7px);
+    }
+
+    }
+
+    @@keyframes bounceIn {
+        0%
+
+    {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+
+    60% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+
+    }
+
+    @@keyframes moveGrid {
+        from
+
+    {
+        background-position: 0 0, 0 0;
+    }
+
+    to {
+        background-position: 120px 120px, 120px 120px;
+    }
+
+    }
+</style>
+
+
+@code {
+    private string playerName = "";
+
+    [Parameter] public EventCallback<string> OnLogin { get; set; }
+
+    private bool CanLogin => !string.IsNullOrWhiteSpace(playerName) && playerName.Length >= 2;
+
+    private async Task Login()
+    {
+        if (CanLogin)
+            await OnLogin.InvokeAsync(playerName.Trim());
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && CanLogin)
+            await Login();
+    }
+}

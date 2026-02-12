@@ -1,0 +1,228 @@
+﻿@page "/"
+@using TicTacToeArena.Client.Services
+@using TicTacToeArena.Shared.Models
+@inject GameService GameService
+@implements IDisposable
+
+@if (!isLoggedIn)
+{
+    <LoginScreen OnLogin="HandleLogin" />
+}
+else if (currentView == "lobby")
+{
+    <div style="padding: 2rem; max-width: 800px; margin: 2rem auto; background: rgba(30,27,75,0.85); border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); color: #f1f5f9;">
+        <header style="border-bottom: 2px solid rgba(34,211,238,0.3); padding-bottom: 1rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+            <h2>Welcome, @GameService.CurrentPlayer?.Name!</h2>
+            <button @onclick="CreateGame" style="padding: 0.75rem 1.5rem; background: #22d3ee; color: #1e1b4b; border: none; border-radius: 12px; cursor: pointer; font-size: 1rem; font-weight: 600; box-shadow: 0 4px 12px rgba(34,211,238,0.4); transition: all 0.3s;">
+                + Create New Game
+            </button>
+        </header>
+
+        <div>
+            <h3>Available Games (@availableSessions.Count)</h3>
+
+            @if (availableSessions.Count == 0)
+            {
+                <p style="color: #a5b4fc; padding: 2rem; text-align: center;">No games available. Create one to start playing!</p>
+            }
+            else
+            {
+                @foreach (var session in availableSessions)
+                {
+                    <div @onclick="() => JoinGame(session.Id)"
+                         style="border: 2px solid rgba(255,255,255,0.1); padding: 1rem; margin-bottom: 0.5rem; cursor: pointer; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; transition: all 0.3s; background: rgba(255,255,255,0.05); color: #f1f5f9;"
+                         onmouseover="this.style.borderColor='#22d3ee'; this.style.transform='translateX(5px)'; this.style.boxShadow='0 8px 24px rgba(34,211,238,0.4)';"
+                         onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.transform='translateX(0)'; this.style.boxShadow='none';">
+                        <div>
+                            <strong style="color: #e0e7ff;">@session.Name</strong>
+                            <br />
+                            <small style="color: #a5b4fc;">Host: @session.Host?.Name</small>
+                        </div>
+                        <button style="padding: 0.5rem 1rem; background: #22d3ee; color: #1e1b4b; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 12px rgba(34,211,238,0.4); transition: all 0.3s;"
+                                onmouseover="this.style.background='#0ea5e9'; this.style.transform='scale(1.05)'; this.style.boxShadow='0 8px 20px rgba(14,165,233,0.5)';"
+                                onmouseout="this.style.background='#22d3ee'; this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(34,211,238,0.4)';">
+                            Join
+                        </button>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+}
+else if (currentView == "game")
+{
+    @if (GameService.CurrentSession != null && GameService.CurrentPlayer != null)
+    {
+        <GameBoard Session="GameService.CurrentSession"
+                   CurrentPlayer="GameService.CurrentPlayer"
+                   OnMove="MakeMove"
+                   OnLeave="LeaveGame"
+                   GameResult="@gameResult" />
+    }
+    else
+    {
+        <div style="padding: 3rem; text-align: center;">
+            <p>Loading game...</p>
+        </div>
+    }
+}
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div style="color: #dc2626; padding: 1rem; background: rgba(220,38,38,0.1); border-radius: 8px; margin: 1rem 0; border-left: 4px solid #dc2626;">
+        ⚠️ @errorMessage
+    </div>
+
+}
+
+@code {
+    private bool isLoggedIn = false;
+    private string currentView = "lobby";
+    private string? errorMessage;
+    private string? gameResult;
+    private List<GameSession> availableSessions = new();
+
+    private async Task HandleLogin(string name)
+    {
+        try
+        {
+            await GameService.ConnectAsync(name);
+            isLoggedIn = true;
+            errorMessage = null;
+
+            // Wire up all events
+            GameService.OnSessionListUpdated += HandleSessionListUpdated;
+            GameService.OnSessionCreated += HandleSessionCreated;
+            GameService.OnGameStarted += HandleGameStarted;
+            GameService.OnMoveMade += HandleMoveMade;
+            GameService.OnGameEnded += HandleGameEnded;
+            GameService.OnError += HandleError;
+
+            Console.WriteLine("All events wired up successfully");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Connection failed: {ex.Message}";
+            Console.WriteLine($"Login error: {ex}");
+        }
+    }
+
+    private async Task CreateGame()
+    {
+        Console.WriteLine("CreateGame button clicked");
+        try
+        {
+            errorMessage = null;
+            await GameService.CreateSession($"{GameService.CurrentPlayer?.Name}'s Game");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to create game: {ex.Message}";
+            Console.WriteLine($"CreateGame error: {ex}");
+        }
+    }
+
+    private async Task JoinGame(string sessionId)
+    {
+        Console.WriteLine($"Joining game: {sessionId}");
+        try
+        {
+            errorMessage = null;
+            await GameService.JoinSession(sessionId);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to join game: {ex.Message}";
+            Console.WriteLine($"JoinGame error: {ex}");
+        }
+    }
+
+    private void HandleSessionListUpdated(List<GameSession> sessions)
+    {
+        Console.WriteLine($"Session list updated: {sessions.Count} sessions");
+        availableSessions = sessions;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleSessionCreated(GameSession session)
+    {
+        Console.WriteLine($"Session created handler: {session.Id}");
+        gameResult = null;
+        currentView = "game";
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleGameStarted(GameSession session)
+    {
+        Console.WriteLine($"Game started handler: {session.Id}");
+        gameResult = null;
+        currentView = "game";
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task MakeMove(int position)
+    {
+        try
+        {
+            await GameService.MakeMove(position);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Move error: {ex}");
+        }
+    }
+
+    private void HandleMoveMade(int position, string playerId, CellState symbol)
+    {
+        Console.WriteLine($"Move made: pos={position}, player={playerId}, symbol={symbol}");
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleGameEnded(string? winnerId, string reason)
+    {
+        Console.WriteLine($"Game ended: winner={winnerId}, reason={reason}");
+
+        if (winnerId == null)
+        {
+            gameResult = reason == "opponent_left" ? "Opponent Left" : "It's a Draw!";
+        }
+        else if (winnerId == GameService.CurrentPlayer?.Id)
+        {
+            gameResult = "🎉 You Won!";
+        }
+        else
+        {
+            gameResult = "You Lost";
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleError(string message)
+    {
+        Console.WriteLine($"Error from server: {message}");
+        errorMessage = message;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void LeaveGame()
+    {
+        Console.WriteLine("Leaving game");
+        gameResult = null;
+        currentView = "lobby";
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        if (GameService != null)
+        {
+            GameService.OnSessionListUpdated -= HandleSessionListUpdated;
+            GameService.OnSessionCreated -= HandleSessionCreated;
+            GameService.OnGameStarted -= HandleGameStarted;
+            GameService.OnMoveMade -= HandleMoveMade;
+            GameService.OnGameEnded -= HandleGameEnded;
+            GameService.OnError -= HandleError;
+        }
+    }
+}

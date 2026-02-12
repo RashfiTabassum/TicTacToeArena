@@ -1,0 +1,422 @@
+﻿@using TicTacToeArena.Shared.Models
+@implements IDisposable
+
+@if (Session == null || CurrentPlayer == null)
+{
+    <div class="loading">
+        <p>Loading game...</p>
+    </div>
+    return;
+}
+
+@if (Session.Host == null)
+{
+    <div class="loading">
+        <p>Waiting for game to start...</p>
+    </div>
+    return;
+}
+
+<div class="game-container">
+    <div class="game-header">
+        <button class="btn-leave" @onclick="HandleLeave">← Leave Game</button>
+        <h3>@Session.Name</h3>
+    </div>
+
+    <div class="game-info">
+        <div class="player-info">
+            <div class="player @(IsHost ? "active" : "")">
+                <span class="player-name">@Session.Host?.Name</span>
+                <span class="symbol x">X</span>
+                @if (IsHost)
+                {
+                    <span class="you-badge">YOU</span>
+                }
+            </div>
+            <div class="vs">VS</div>
+            <div class="player @(!IsHost ? "active" : "")">
+                <span class="player-name">@(Session.Guest?.Name ?? "Waiting...")</span>
+                <span class="symbol o">O</span>
+                @if (!IsHost && Session.Guest != null)
+                {
+                    <span class="you-badge">YOU</span>
+                }
+            </div>
+        </div>
+
+        <p class="turn-indicator @(IsMyTurn ? "my-turn" : "")">
+            @if (Session.Guest == null)
+            {
+                <span>⏳ Waiting for opponent to join...</span>
+            }
+            else if (IsMyTurn)
+            {
+                <span>🎯 Your turn!</span>
+            }
+            else
+            {
+                <span>⏳ Opponent's turn...</span>
+            }
+        </p>
+    </div>
+
+    <div class="board">
+        @for (int i = 0; i < 9; i++)
+        {
+            var pos = i;
+            <div class="cell @GetCellClass(pos) @(IsMyTurn ? "" : "disabled")" @onclick="() => MakeMove(pos)">
+                @GetCellContent(pos)
+            </div>
+
+        }
+    </div>
+
+    @if (!string.IsNullOrEmpty(GameResult))
+    {
+        <div class="result-overlay">
+            <div class="result-message">
+                <h2>@GameResult</h2>
+                <button @onclick="HandleLeave">Back to Lobby</button>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .game-container {
+        max-width: 700px;
+        width: 95%;
+        margin: 1rem auto; /* reduce top/bottom margins */
+        padding: 1.5rem; /* slightly less padding */
+        background: rgba(30,27,75,0.85);
+        border-radius: 16px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+        color: #f1f5f9;
+    }
+
+    .game-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+
+    .btn-leave {
+        padding: 0.5rem 1rem;
+        background: transparent;
+        border: 2px solid #22d3ee; /* neon cyan */
+        border-radius: 8px;
+        color: #22d3ee;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+        .btn-leave:hover {
+            background: #22d3ee; /* cyan background on hover */
+            color: white; /* white text on hover */
+            border-color: #22d3ee; /* keep border cyan */
+        }
+
+    .game-header h3 {
+        color: #a78bfa; /* gradient-ish purple */
+    }
+
+    .game-info {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .player-info {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 2rem;
+        margin-bottom: 1.5rem;
+    }
+
+
+    .player {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 1rem;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.05); /* translucent card */
+        position: relative;
+        min-width: 120px;
+        opacity: 0.6;
+        transition: all 0.3s;
+    }
+
+
+        .player.active {
+            opacity: 1;
+            background: rgba(34,211,238,0.15);
+            box-shadow: 0 0 10px #22d3ee, 0 0 20px #22d3ee, 0 0 30px #22d3ee, 0 0 40px rgba(34,211,238,0.3);
+            animation: cardGlow 2s ease-in-out infinite alternate;
+        }
+
+    .player-name {
+        font-weight: 600;
+        font-size: 1rem;
+        color: #f1f5f9;
+    }
+
+    .vs {
+        font-weight: 900;
+        font-size: 1.5rem;
+        color: #94a3b8;
+    }
+
+    .symbol {
+        font-weight: 900;
+        font-size: 1.5rem;
+    }
+
+        .symbol.x {
+            color: #3b82f6; /* neon blue */
+        }
+
+        .symbol.o {
+            color: #ec4899;
+        }
+
+    .you-badge {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background: #22c55e;
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: 700;
+    }
+
+
+    .turn-indicator {
+        font-size: 1.2rem;
+        font-weight: bold;
+        padding: 0.75rem;
+        border-radius: 8px;
+        background: rgba(255,255,255,0.05);
+        color: #a5b4fc;
+        transition: all 0.3s;
+    }
+
+        .turn-indicator.my-turn {
+            background: rgba(34, 211, 238, 0.15); /* translucent cyan */
+            color: greenyellow; /* solid cyan */
+            font-weight: 700;
+            box-shadow: 0 0 10px #22d3ee, 0 0 20px #22d3ee, 0 0 30px #22d3ee, 0 0 40px rgba(34,211,238,0.3);
+            text-shadow: 0 0 3px rgba(34,211,238,0.5), 0 0 6px rgba(34,211,238,0.3);
+        }
+
+    /* Board takes max 60vh so all cells fit */
+    .board {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+        width: 300px; /* smaller than before */
+        max-height: 300px; /* limit vertical size */
+        margin: 0 auto;
+        border-radius: 16px;
+        background: rgba(255,255,255,0.05);
+    }
+
+
+    /* Each cell is square */
+    .cell {
+        aspect-ratio: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem; /* smaller font to fit */
+        cursor: pointer;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.05);
+        transition: all 0.3s;
+        color: #f1f5f9;
+    }
+
+        .cell:hover:not(.occupied) {
+            background: rgba(34, 211, 238, 0.2); /* more visible hover */
+            border-color: #0ff;
+            transform: scale(1.08); /* slightly larger pop */
+        }
+
+
+        .cell.occupied {
+            cursor: not-allowed;
+        }
+
+        .cell.x {
+
+            color: #3b82f6; /* solid neon blue */
+            text-shadow: none; /* remove shadow */
+            animation: none; /* no pulsing */
+            font-size: 3.5rem; /* bigger symbol*/ 
+            font-weight: bolder; /* extra bold */
+        }
+
+        .cell.o {
+            color: #ec4899; /* solid neon pink */
+            text-shadow: none; /* remove shadow */
+            animation: none; /* no pulsing */
+            font-size: 3.5rem; /* bigger symbol */
+            font-weight: bolder; /* extra bold */
+        }
+
+        .cell.disabled {
+            cursor: not-allowed;
+            opacity: 0.6; /* dim it slightly */
+            pointer-events: none; /* block clicks */
+        }
+
+
+
+    .result-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(30,27,75,0.95);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+
+    .result-message {
+        background: rgba(30,27,75,0.85);
+        padding: 3rem 2rem;
+        border-radius: 16px;
+        text-align: center;
+        color: #f1f5f9;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+
+        .result-message h2 {
+            margin-bottom: 1.5rem;
+            font-size: 2rem;
+        }
+
+
+    button {
+        padding: 0.75rem 1.5rem;
+        background: #6366f1;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+        button:hover {
+            background: #4f46e5;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+
+    .loading {
+        text-align: center;
+        padding: 3rem;
+        color: #666;
+    }
+
+    @@keyframes neonPulse {
+        from
+
+    {
+        text-shadow: 0 0 5px currentColor, 0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor;
+    }
+
+    to {
+        text-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor, 0 0 40px currentColor;
+    }
+
+    }
+
+    @@keyframes cardGlow {
+        from
+
+    {
+        box-shadow: 0 0 10px #22d3ee, 0 0 20px #22d3ee, 0 0 30px #22d3ee, 0 0 40px rgba(34,211,238,0.3);
+    }
+
+    to {
+        box-shadow: 0 0 15px #22d3ee, 0 0 25px #22d3ee, 0 0 35px #22d3ee, 0 0 50px rgba(34,211,238,0.5);
+    }
+
+    }
+</style>
+
+@code {
+    [Parameter]
+    public GameSession Session { get; set; } = default!;
+
+    [Parameter]
+    public Player CurrentPlayer { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<int> OnMove { get; set; }
+
+    [Parameter]
+    public EventCallback OnLeave { get; set; }
+
+    [Parameter]
+    public string? GameResult { get; set; }
+
+    [Inject]
+    public GameService GameService { get; set; } = default!;
+
+    private bool IsHost => Session?.Host?.Id == CurrentPlayer?.Id;
+    private bool IsMyTurn => GameService.CurrentSession?.CurrentTurn == CurrentPlayer?.Id;
+
+    protected override void OnInitialized()
+    {
+        GameService.OnMoveMade += HandleMoveMade;
+    }
+
+    private void HandleMoveMade(int position, string playerId, CellState symbol)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task MakeMove(int position)
+    {
+        if (!IsMyTurn || GameService.Board[position] != CellState.Empty) return;
+        await OnMove.InvokeAsync(position);
+    }
+
+    private async Task HandleLeave()
+    {
+        await OnLeave.InvokeAsync();
+    }
+
+    private string GetCellClass(int pos)
+    {
+        return GameService.Board[pos] switch
+        {
+            CellState.X => "occupied x",
+            CellState.O => "occupied o",
+            _ => ""
+        };
+    }
+
+    private string GetCellContent(int pos) => GameService.Board[pos] switch
+    {
+        CellState.X => "✕",
+        CellState.O => "◯",
+        _ => ""
+    };
+
+    public void Dispose()
+    {
+        GameService.OnMoveMade -= HandleMoveMade;
+    }
+}

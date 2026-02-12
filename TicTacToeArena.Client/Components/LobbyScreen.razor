@@ -1,0 +1,437 @@
+﻿@using TicTacToeArena.Shared.Models
+@implements IDisposable
+
+<div class="lobby-container">
+    <header class="lobby-header">
+        <div class="user-info">
+            <div class="avatar">@GameService.CurrentPlayer?.Name.Substring(0, 1).ToUpper()</div>
+            <div>
+                <h2>@GameService.CurrentPlayer?.Name</h2>
+                <span class="status">● Online</span>
+            </div>
+        </div>
+        <button class="btn-create" @onclick="CreateGame">
+            <span>+ Create New Game</span>
+        </button>
+    </header>
+
+    <div class="sessions-section">
+        <div class="section-header">
+            <h3>🎮 Available Games</h3>
+            <span class="count">@availableSessions.Count @(availableSessions.Count == 1 ? "game" : "games")</span>
+        </div>
+
+        @if (availableSessions.Count == 0)
+        {
+            <div class="empty-state">
+                <div class="empty-icon">🎯</div>
+                <p>No games available</p>
+                <span>Create a new game to start playing!</span>
+            </div>
+        }
+        else
+        {
+            <div class="sessions-list">
+                @foreach (var session in availableSessions)
+                {
+                    <div class="session-item" @onclick="() => JoinGame(session.Id)">
+                        <div class="session-info">
+                            <h4>@session.Name</h4>
+                            <span class="host">Host: @session.Host?.Name</span>
+                        </div>
+                        <button class="btn-join">Join →</button>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@* <style> *@
+@*     .lobby-container { *@
+@*         max-width: 900px; *@
+@*         margin: 0 auto; *@
+@*         padding: 2rem; *@
+@*     } *@
+
+@*     .lobby-header { *@
+@*         display: flex; *@
+@*         justify-content: space-between; *@
+@*         align-items: center; *@
+@*         margin-bottom: 2rem; *@
+@*         padding: 1.5rem; *@
+@*         background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); *@
+@*         border-radius: 16px; *@
+@*         color: white; *@
+@*     } *@
+
+@*     .user-info { *@
+@*         display: flex; *@
+@*         align-items: center; *@
+@*         gap: 1rem; *@
+@*     } *@
+
+@*     .avatar { *@
+@*         width: 50px; *@
+@*         height: 50px; *@
+@*         background: rgba(255, 255, 255, 0.2); *@
+@*         border: 2px solid rgba(255, 255, 255, 0.5); *@
+@*         border-radius: 50%; *@
+@*         display: flex; *@
+@*         align-items: center; *@
+@*         justify-content: center; *@
+@*         font-size: 1.5rem; *@
+@*         font-weight: 700; *@
+@*     } *@
+
+@*     .user-info h2 { *@
+@*         margin: 0; *@
+@*         font-size: 1.3rem; *@
+@*     } *@
+
+@*     .status { *@
+@*         font-size: 0.9rem; *@
+@*         color: #86efac; *@
+@*     } *@
+
+@*     .btn-create { *@
+@*         padding: 0.75rem 1.5rem; *@
+@*         background: white; *@
+@*         color: #6366f1; *@
+@*         border: none; *@
+@*         border-radius: 8px; *@
+@*         font-size: 1rem; *@
+@*         font-weight: 600; *@
+@*         cursor: pointer; *@
+@*         transition: all 0.3s; *@
+@*     } *@
+
+@*         .btn-create:hover { *@
+@*             transform: translateY(-2px); *@
+@*             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); *@
+@*         } *@
+
+@*     .sessions-section { *@
+@*         background: #f8fafc; *@
+@*         padding: 1.5rem; *@
+@*         border-radius: 12px; *@
+@*     } *@
+
+@*     .section-header { *@
+@*         display: flex; *@
+@*         justify-content: space-between; *@
+@*         align-items: center; *@
+@*         margin-bottom: 1rem; *@
+@*     } *@
+
+@*         .section-header h3 { *@
+@*             margin: 0; *@
+@*             font-size: 1.2rem; *@
+@*             color: #1e293b; *@
+@*         } *@
+
+@*     .count { *@
+@*         background: white; *@
+@*         padding: 0.25rem 0.75rem; *@
+@*         border-radius: 20px; *@
+@*         font-size: 0.85rem; *@
+@*         color: #64748b; *@
+@*         border: 1px solid #e2e8f0; *@
+@*     } *@
+
+@*     .empty-state { *@
+@*         text-align: center; *@
+@*         padding: 4rem 2rem; *@
+@*         color: #64748b; *@
+@*     } *@
+
+@*     .empty-icon { *@
+@*         font-size: 4rem; *@
+@*         margin-bottom: 1rem; *@
+@*         opacity: 0.5; *@
+@*     } *@
+
+@*     .empty-state p { *@
+@*         font-size: 1.2rem; *@
+@*         font-weight: 600; *@
+@*         margin-bottom: 0.5rem; *@
+@*     } *@
+
+@*     .empty-state span { *@
+@*         font-size: 0.9rem; *@
+@*         color: #94a3b8; *@
+@*     } *@
+
+@*     .sessions-list { *@
+@*         display: flex; *@
+@*         flex-direction: column; *@
+@*         gap: 0.75rem; *@
+@*     } *@
+
+@*     .session-item { *@
+@*         display: flex; *@
+@*         justify-content: space-between; *@
+@*         align-items: center; *@
+@*         padding: 1.25rem; *@
+@*         background: white; *@
+@*         border: 2px solid #e2e8f0; *@
+@*         border-radius: 12px; *@
+@*         cursor: pointer; *@
+@*         transition: all 0.3s; *@
+@*     } *@
+
+@*         .session-item:hover { *@
+@*             border-color: #6366f1; *@
+@*             transform: translateX(5px); *@
+@*             box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1); *@
+@*         } *@
+
+@*     .session-info h4 { *@
+@*         margin: 0 0 0.25rem 0; *@
+@*         font-size: 1.1rem; *@
+@*         color: #1e293b; *@
+@*     } *@
+
+@*     .host { *@
+@*         font-size: 0.85rem; *@
+@*         color: #64748b; *@
+@*     } *@
+
+@*     .btn-join { *@
+@*         padding: 0.5rem 1.25rem; *@
+@*         background: #22c55e; *@
+@*         color: white; *@
+@*         border: none; *@
+@*         border-radius: 8px; *@
+@*         font-weight: 600; *@
+@*         cursor: pointer; *@
+@*         transition: all 0.3s; *@
+@*     } *@
+
+@*         .btn-join:hover { *@
+@*             background: #16a34a; *@
+@*             transform: scale(1.05); *@
+@*         } *@
+@* </style> *@
+
+<style>
+    .lobby-container {
+        max-width: 900px;
+        margin: 2rem auto;
+        padding: 2rem;
+        font-family: 'Segoe UI', Roboto, -apple-system, sans-serif;
+        color: #f1f5f9;
+    }
+
+    /* Header */
+    .lobby-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #1e1b4b, #312e81, #4c1d95);
+        border-radius: 16px;
+        color: white;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .avatar {
+        width: 50px;
+        height: 50px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #22d3ee;
+    }
+
+    .user-info h2 {
+        margin: 0;
+        font-size: 1.3rem;
+        color: #f1f5f9;
+    }
+
+    .status {
+        font-size: 0.9rem;
+        color: #22d3ee;
+    }
+
+    /* Create button */
+    .btn-create {
+        padding: 0.75rem 1.5rem;
+        background: #22d3ee;
+        color: #1e1b4b;
+        border: none;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(34, 211, 238, 0.4);
+    }
+
+        .btn-create:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(34, 211, 238, 0.6);
+        }
+
+    /* Sessions section */
+    .sessions-section {
+        background: rgba(30, 27, 75, 0.85);
+        padding: 1.5rem;
+        border-radius: 16px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+        .section-header h3 {
+            margin: 0;
+            font-size: 1.2rem;
+            color: #e0e7ff;
+        }
+
+    .count {
+        background: rgba(255,255,255,0.1);
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        color: #22d3ee;
+        border: 1px solid rgba(34,211,238,0.3);
+    }
+
+    /* Empty state */
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #c7d2fe;
+    }
+
+    .empty-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .empty-state p {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: #f1f5f9;
+    }
+
+    .empty-state span {
+        font-size: 0.9rem;
+        color: #a5b4fc;
+    }
+
+    /* Sessions list */
+    .sessions-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .session-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.25rem;
+        background: rgba(255,255,255,0.05);
+        border: 2px solid rgba(255,255,255,0.1);
+        border-radius: 16px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        color: #f1f5f9;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+        .session-item:hover {
+            border-color: #22d3ee;
+            transform: translateX(5px);
+            box-shadow: 0 8px 24px rgba(34,211,238,0.4);
+        }
+
+    .session-info h4 {
+        margin: 0 0 0.25rem 0;
+        font-size: 1.1rem;
+        color: #e0e7ff;
+    }
+
+    .host {
+        font-size: 0.85rem;
+        color: #a5b4fc;
+    }
+
+    /* Join button */
+    .btn-join {
+        padding: 0.5rem 1.25rem;
+        background: #22d3ee;
+        color: #1e1b4b;
+        border: none;
+        border-radius: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(34,211,238,0.4);
+    }
+
+        .btn-join:hover {
+            background: #0ea5e9;
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(14,165,233,0.5);
+        }
+</style>
+
+@code {
+    [Parameter] public GameService GameService { get; set; } = default!;
+    [Parameter] public EventCallback OnCreateGame { get; set; }
+    [Parameter] public EventCallback<string> OnJoinGame { get; set; }
+
+    private List<GameSession> availableSessions = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        GameService.OnSessionListUpdated += HandleSessionListUpdated;
+
+        //Request fresh session list when lobby loads
+        await GameService.RequestSessionList();
+    }
+
+    private void HandleSessionListUpdated(List<GameSession> sessions)
+    {
+        availableSessions = sessions;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task CreateGame()
+    {
+        await OnCreateGame.InvokeAsync();
+    }
+
+    private async Task JoinGame(string sessionId)
+    {
+        await OnJoinGame.InvokeAsync(sessionId);
+    }
+
+    public void Dispose()
+    {
+        GameService.OnSessionListUpdated -= HandleSessionListUpdated;
+    }
+}
