@@ -10,7 +10,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("CorsPolicy", policy =>
     {
-        policy.WithOrigins("https://localhost:7174", "http://localhost:5242", "http://localhost:5000", "https://tictactoearena.onrender.com") // Add your client URLs
+        policy.WithOrigins("https://localhost:7174", "http://localhost:5242", "http://localhost:5000", "https://tictactoearena.onrender.com", "https://tictactoearena-qv4x.onrender.com") // Add your client URLs
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials(); // Important for SignalR
