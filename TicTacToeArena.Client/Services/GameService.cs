@@ -23,13 +23,14 @@ public class GameService
     public CellState[] Board { get; private set; } = new CellState[9];
     public GameService(IConfiguration config)
     {
-        _hubUrl = config["ApiUrl"] + "/gamehub";
+        _hubUrl = config["ApiUrl"]!.TrimEnd('/') + "/gamehub";
     }
     public async Task ConnectAsync(string playerName)
     {
         try
         {
-            Console.WriteLine($"Connecting to {_hubUrl}");
+            // ⚡ Debug: check the URL before connecting
+            Console.WriteLine($"[DEBUG] Attempting to connect to SignalR Hub at: {_hubUrl}");
 
             // Create the connection
             _hubConnection = new HubConnectionBuilder()

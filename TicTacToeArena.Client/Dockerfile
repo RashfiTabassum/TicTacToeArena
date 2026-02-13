@@ -21,3 +21,6 @@ FROM nginx:alpine AS final
 WORKDIR /usr/share/nginx/html
 RUN rm -rf ./*
 COPY --from=build /app/publish/wwwroot ./
+COPY TicTacToeArena.Client/nginx.conf /etc/nginx/templates/default.conf.template
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

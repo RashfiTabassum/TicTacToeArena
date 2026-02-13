@@ -1,4 +1,4 @@
-using TicTacToeArena.Api.Hubs;
+﻿using TicTacToeArena.Api.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,7 +10,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("CorsPolicy", policy =>
     {
-        policy.WithOrigins("https://localhost:7174", "http://localhost:5000", "https://your-client-app.onrender.com") // Add your client URLs
+        policy.WithOrigins("https://localhost:7174", "http://localhost:5242", "http://localhost:5000", "https://tictactoearena.onrender.com") // Add your client URLs
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials(); // Important for SignalR
@@ -39,11 +39,15 @@ app.UseSwaggerUI();
 var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
 app.Urls.Add($"http://0.0.0.0:{port}");
 
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.UseCors("CorsPolicy");
 app.UseAuthorization();
 
 // Map our Hub to a URL
 app.MapHub<GameHub>("/gamehub");
 app.MapControllers();
+//app.MapGet("/", () => "TicTacToeArena API is running 🚀");
 
 app.Run();
