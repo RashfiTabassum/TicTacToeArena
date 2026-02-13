@@ -6,6 +6,12 @@ TicTacToe Arena is a modern, interactive, and animated online Tic Tac Toe game b
 
 ---
 
+## 🌐 Live Demo
+
+**[Play Now → https://tictactoearena-qv4x.onrender.com/](https://tictactoearena-qv4x.onrender.com/)**
+
+> Open in two browser tabs with different names to test multiplayer!
+
 ## 🎯 Features
 
 - **Real-time multiplayer gameplay** – challenge friends or opponents live  
@@ -40,6 +46,10 @@ TicTacToe Arena is a modern, interactive, and animated online Tic Tac Toe game b
 git clone https://github.com/yourusername/TicTacToeArena.git
 cd TicTacToeArena
 
-# Navigate to client project and run
+# Terminal 1 - Run the API
+cd TicTacToeArena.Api
+dotnet run --launch-profile https
+
+# Terminal 2 - Run the Client
 cd TicTacToeArena.Client
-dotnet run
+dotnet run --launch-profile https
